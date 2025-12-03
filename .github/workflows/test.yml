@@ -1,0 +1,135 @@
+name: Test
+
+on:
+  workflow_call:
+
+jobs:
+  # ─────────────────────────────────────────────────────
+  # Job: Runs only on 
+  # steps (checkout → lint → build + summaries)
+  # ─────────────────────────────────────────────────────
+  test:
+    name: Build & Lint
+    runs-on: ubuntu-latest
+    steps:
+      # ---------------------------------------------
+      # 1. Checkout repository
+      # ---------------------------------------------
+      - uses: actions/checkout@v4
+
+      # ---------------------------------------------
+      # 1.1. Add summary for checkout
+      # ---------------------------------------------
+      - name: Add checkout summary
+        run: |
+          echo "## Repository Checkout" >> $GITHUB_STEP_SUMMARY
+          echo "Checked out branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Repository ready for setup"
+
+      # ---------------------------------------------
+      # 2. Setup Node.js runtime
+      # ---------------------------------------------
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # ---------------------------------------------
+      # 2.1. Add summary for Node
+      # ---------------------------------------------
+      - name: Add Node summary
+        run: |
+          echo "## Node.js Setup" >> $GITHUB_STEP_SUMMARY
+          echo "Node version: $(node --version)" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Node.js environment configured"
+
+      # ---------------------------------------------
+      # 3. Setup Bun
+      # ---------------------------------------------
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # ---------------------------------------------
+      # 3.1. Add summary for Bun
+      # ---------------------------------------------
+      - name: Add Bun summary
+        run: |
+          echo "## Bun Setup" >> $GITHUB_STEP_SUMMARY
+          echo "Bun version: $(bun --version)" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Bun runtime ready"
+
+      # ---------------------------------------------
+      # 4. Cache Bun global store
+      # ---------------------------------------------
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        id: bun-cache
+        with:
+          path: |
+            ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      # ---------------------------------------------
+      # 4.1. Add summary for cache
+      # ---------------------------------------------
+      - name: Add cache summary
+        run: |
+          CACHE_HIT=${{ steps.bun-cache.outputs.cache-hit }}
+          echo "## Dependency Cache" >> $GITHUB_STEP_SUMMARY
+          echo "Cache hit: $CACHE_HIT" >> $GITHUB_STEP_SUMMARY
+          if [ "$CACHE_HIT" = "true" ]; then
+            echo "::notice::Bun cache restored—skipping install"
+          else
+            echo "::notice::Bun cache miss—installing dependencies"
+          fi
+
+      # ---------------------------------------------
+      # 5. Install project dependencies
+      # ---------------------------------------------
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      # ---------------------------------------------
+      # 5.1. Add summary for install
+      # ---------------------------------------------
+      - name: Add install summary
+        run: |
+          echo "## Install Dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "Installed with bun.lockb—ready for build/lint" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Dependencies installed successfully"
+
+      # ---------------------------------------------
+      # 6. Lint project
+      # ---------------------------------------------
+      - name: Lint
+        run: bun run lint
+      
+      # ---------------------------------------------
+      # 6.1. Add summary for lint
+      # ---------------------------------------------
+      - name: Add lint summary
+        run: |
+          echo "## Lint Results" >> $GITHUB_STEP_SUMMARY
+          echo "Linting completed—no issues found" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Code linting passed"
+
+      # ---------------------------------------------
+      # 7. Build project
+      # ---------------------------------------------
+      - name: Build
+        run: bun run build
+
+      # ---------------------------------------------
+      # 7.1. Add summary for build
+      # ---------------------------------------------
+
+      - name: Add build summary
+        run: |
+          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "Build completed successfully—no errors" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Application build passed"
+
+
