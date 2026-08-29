@@ -1,0 +1,108 @@
+name: Rust Test
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  # ─────────────────────────────────────────────────────
+  # Job: Runs only on
+  # steps (checkout → setup Rust → check → lint → test → build + summaries)
+  # ─────────────────────────────────────────────────────
+  test:
+    name: Build, Lint & Test
+    runs-on: ubuntu-latest
+    steps:
+      # ---------------------------------------------
+      # 1. Checkout repository
+      # ---------------------------------------------
+      - uses: actions/checkout@v4
+
+      # ---------------------------------------------
+      # 1.1. Add summary for checkout
+      # ---------------------------------------------
+      - name: Add checkout summary
+        run: |
+          echo "## Repository Checkout" >> $GITHUB_STEP_SUMMARY
+          echo "Checked out branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Repository ready for Rust setup"
+
+      # ---------------------------------------------
+      # 2. Setup Rust toolchain
+      # ---------------------------------------------
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      # ---------------------------------------------
+      # 2.1. Add summary for Rust
+      # ---------------------------------------------
+      - name: Add Rust summary
+        run: |
+          echo "## Rust Setup" >> $GITHUB_STEP_SUMMARY
+          echo "Rust version: $(rustc --version)" >> $GITHUB_STEP_SUMMARY
+          echo "Cargo version: $(cargo --version)" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Rust toolchain configured"
+
+      # ---------------------------------------------
+      # 3. Check project
+      # ---------------------------------------------
+      - name: Check
+        run: cargo check --locked
+
+      # ---------------------------------------------
+      # 3.1. Add summary for check
+      # ---------------------------------------------
+      - name: Add check summary
+        run: |
+          echo "## Cargo Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "Cargo check completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Cargo check passed"
+
+      # ---------------------------------------------
+      # 4. Lint project
+      # ---------------------------------------------
+      - name: Lint
+        run: cargo clippy --locked -- -D warnings
+
+      # ---------------------------------------------
+      # 4.1. Add summary for lint
+      # ---------------------------------------------
+      - name: Add lint summary
+        run: |
+          echo "## Clippy Results" >> $GITHUB_STEP_SUMMARY
+          echo "Clippy completed successfully—no warnings found" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Rust linting passed"
+
+      # ---------------------------------------------
+      # 5. Test project
+      # ---------------------------------------------
+      - name: Test
+        run: cargo test --locked
+
+      # ---------------------------------------------
+      # 5.1. Add summary for test
+      # ---------------------------------------------
+      - name: Add test summary
+        run: |
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "Cargo tests completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Rust tests passed"
+
+      # ---------------------------------------------
+      # 6. Build project
+      # ---------------------------------------------
+      - name: Build
+        run: cargo build --locked
+
+      # ---------------------------------------------
+      # 6.1. Add summary for build
+      # ---------------------------------------------
+      - name: Add build summary
+        run: |
+          echo "## Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "Cargo build completed successfully—no errors" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Rust application build passed"
