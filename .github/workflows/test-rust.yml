@@ -9,7 +9,7 @@ permissions:
 jobs:
   # ─────────────────────────────────────────────────────
   # Job: Runs only on
-  # steps (checkout → setup Rust → check → lint → test → build + summaries)
+  # steps (checkout → setup Rust → cache → fmt → check → lint → test → build + summaries)
   # ─────────────────────────────────────────────────────
   test:
     name: Build, Lint & Test
@@ -18,7 +18,8 @@ jobs:
       # ---------------------------------------------
       # 1. Checkout repository
       # ---------------------------------------------
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       # ---------------------------------------------
       # 1.1. Add summary for checkout
@@ -35,7 +36,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: clippy, rustfmt
 
       # ---------------------------------------------
       # 2.1. Add summary for Rust
@@ -48,13 +49,49 @@ jobs:
           echo "::notice::Rust toolchain configured"
 
       # ---------------------------------------------
-      # 3. Check project
+      # 3. Cache Rust dependencies & build artifacts
+      # ---------------------------------------------
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        id: rust-cache
+
+      # ---------------------------------------------
+      # 3.1. Add summary for Rust cache
+      # ---------------------------------------------
+      - name: Add Rust cache summary
+        run: |
+          CACHE_HIT=${{ steps.rust-cache.outputs.cache-hit }}
+          echo "## Rust Dependency Cache" >> $GITHUB_STEP_SUMMARY
+          echo "Cache hit: $CACHE_HIT" >> $GITHUB_STEP_SUMMARY
+          if [ "$CACHE_HIT" = "true" ]; then
+            echo "::notice::Rust cache restored"
+          else
+            echo "::notice::Rust cache miss—dependencies will be rebuilt"
+          fi
+
+      # ---------------------------------------------
+      # 4. Check formatting
+      # ---------------------------------------------
+      - name: Format Check
+        run: cargo fmt --check
+
+      # ---------------------------------------------
+      # 4.1. Add summary for format check
+      # ---------------------------------------------
+      - name: Add format check summary
+        run: |
+          echo "## Cargo Format Results" >> $GITHUB_STEP_SUMMARY
+          echo "Cargo format check completed successfully—codebase formatted" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Rust formatting check passed"
+
+      # ---------------------------------------------
+      # 5. Check project
       # ---------------------------------------------
       - name: Check
         run: cargo check --locked
 
       # ---------------------------------------------
-      # 3.1. Add summary for check
+      # 5.1. Add summary for check
       # ---------------------------------------------
       - name: Add check summary
         run: |
@@ -63,13 +100,13 @@ jobs:
           echo "::notice::Cargo check passed"
 
       # ---------------------------------------------
-      # 4. Lint project
+      # 6. Lint project
       # ---------------------------------------------
       - name: Lint
         run: cargo clippy --locked -- -D warnings
 
       # ---------------------------------------------
-      # 4.1. Add summary for lint
+      # 6.1. Add summary for lint
       # ---------------------------------------------
       - name: Add lint summary
         run: |
@@ -78,13 +115,13 @@ jobs:
           echo "::notice::Rust linting passed"
 
       # ---------------------------------------------
-      # 5. Test project
+      # 7. Test project
       # ---------------------------------------------
       - name: Test
         run: cargo test --locked
 
       # ---------------------------------------------
-      # 5.1. Add summary for test
+      # 7.1. Add summary for test
       # ---------------------------------------------
       - name: Add test summary
         run: |
@@ -93,13 +130,13 @@ jobs:
           echo "::notice::Rust tests passed"
 
       # ---------------------------------------------
-      # 6. Build project
+      # 8. Build project
       # ---------------------------------------------
       - name: Build
         run: cargo build --locked
 
       # ---------------------------------------------
-      # 6.1. Add summary for build
+      # 8.1. Add summary for build
       # ---------------------------------------------
       - name: Add build summary
         run: |
