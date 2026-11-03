@@ -88,7 +88,7 @@ jobs:
       # 5. Check project
       # ---------------------------------------------
       - name: Check
-        run: cargo check --locked
+        run: cargo check --workspace --all-targets --locked
 
       # ---------------------------------------------
       # 5.1. Add summary for check
@@ -103,7 +103,7 @@ jobs:
       # 6. Lint project
       # ---------------------------------------------
       - name: Lint
-        run: cargo clippy --locked -- -D warnings
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
       # ---------------------------------------------
       # 6.1. Add summary for lint
@@ -118,7 +118,7 @@ jobs:
       # 7. Test project
       # ---------------------------------------------
       - name: Test
-        run: cargo test --locked
+        run: cargo test --workspace --locked
 
       # ---------------------------------------------
       # 7.1. Add summary for test
@@ -133,7 +133,7 @@ jobs:
       # 8. Build project
       # ---------------------------------------------
       - name: Build
-        run: cargo build --locked
+        run: cargo build --workspace --locked
 
       # ---------------------------------------------
       # 8.1. Add summary for build
